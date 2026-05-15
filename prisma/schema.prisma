@@ -1,0 +1,533 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WorkspacePlan {
+  STARTER
+  GROWTH
+  PRO
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+enum LeadTemperature {
+  COLD
+  WARM
+  HOT
+}
+
+enum CustomerHealth {
+  HEALTHY
+  WATCH
+  AT_RISK
+  UPSELL
+}
+
+enum BookingStatus {
+  DRAFT
+  CONFIRMED
+  NEEDS_REMINDER
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  ARCHIVED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ConversationChannel {
+  EMAIL
+  SMS
+  WHATSAPP
+  MESSENGER
+  INSTAGRAM
+  PHONE
+}
+
+enum ConversationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum ConversationSentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+}
+
+enum AutomationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  VOID
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum AIInsightType {
+  SUMMARY
+  RISK
+  UPSELL
+  NEXT_ACTION
+  ANALYTICS
+  AUTOMATION
+}
+
+enum NotificationType {
+  SYSTEM
+  LEAD
+  CUSTOMER
+  BOOKING
+  TASK
+  INVOICE
+  AUTOMATION
+  CONVERSATION
+  AI
+}
+
+enum NotificationPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ActivityType {
+  CUSTOMER_CREATED
+  CUSTOMER_UPDATED
+  CUSTOMER_NOTES_UPDATED
+  LEAD_CREATED
+  LEAD_UPDATED
+  LEAD_STAGE_CHANGED
+  BOOKING_CREATED
+  TASK_CREATED
+  TASK_UPDATED
+  MESSAGE_CREATED
+  INVOICE_CREATED
+  QUOTE_CREATED
+  QUOTE_UPDATED
+  AI_INSIGHT_CREATED
+  AUTOMATION_CREATED
+  AUTOMATION_UPDATED
+}
+
+enum EntityType {
+  WORKSPACE
+  USER
+  CUSTOMER
+  LEAD
+  BOOKING
+  TASK
+  INVOICE
+  QUOTE
+  CONVERSATION
+  AUTOMATION
+}
+
+model Workspace {
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  plan          WorkspacePlan        @default(STARTER)
+  industry      String?
+  companySize   Int?
+  primaryColor  String?              @default("#22d3ee")
+  aiEnabled     Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  members       WorkspaceMember[]
+  users         User[]
+  customers     Customer[]
+  leads         Lead[]
+  bookings      Booking[]
+  tasks         Task[]
+  conversations ConversationThread[]
+  automations   AutomationFlow[]
+  invoices      Invoice[]
+  quotes        Quote[]
+  aiInsights    AIInsight[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+}
+
+model User {
+  id               String                @id @default(cuid())
+  workspaceId      String
+  email            String
+  passwordHash     String?
+  firstName        String
+  lastName         String
+  title            String?
+  avatarUrl        String?
+  isActive         Boolean               @default(true)
+  lastSeenAt       DateTime?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  workspace        Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  memberships      WorkspaceMember[]
+  ownedCustomers   Customer[]            @relation("CustomerOwner")
+  ownedLeads       Lead[]                @relation("LeadOwner")
+  assignedBookings Booking[]             @relation("BookingAssignee")
+  assignedTasks    Task[]                @relation("TaskAssignee")
+  createdQuotes    Quote[]               @relation("QuoteCreator")
+  createdMessages  ConversationMessage[]
+  createdInsights  AIInsight[]           @relation("InsightCreator")
+  notifications    Notification[]
+  activityLogs     ActivityLog[]
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole @default(MEMBER)
+  createdAt   DateTime      @default(now())
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model Customer {
+  id               String               @id @default(cuid())
+  workspaceId      String
+  ownerId          String?
+  companyName      String
+  contactName      String?
+  email            String?
+  phone            String?
+  status           String?              @default("Active")
+  score            Int                  @default(0)
+  health           CustomerHealth       @default(HEALTHY)
+  revenueGenerated Decimal              @default(0) @db.Decimal(12, 2)
+  notes            String?
+  lastActivityAt   DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  workspace        Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner            User?                @relation("CustomerOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  bookings         Booking[]
+  tasks            Task[]
+  invoices         Invoice[]
+  quotes           Quote[]
+  conversations    ConversationThread[]
+  aiInsights       AIInsight[]
+  activityLogs     ActivityLog[]
+
+  @@unique([workspaceId, companyName])
+  @@index([workspaceId, health])
+  @@index([ownerId])
+}
+
+model Lead {
+  id             String          @id @default(cuid())
+  workspaceId    String
+  ownerId        String?
+  companyName    String
+  contactName    String?
+  email          String?
+  phone          String?
+  status         LeadStatus      @default(NEW)
+  temperature    LeadTemperature @default(WARM)
+  score          Int             @default(0)
+  estimatedValue Decimal         @default(0) @db.Decimal(12, 2)
+  probability    Int             @default(0)
+  source         String?
+  lastContactAt  DateTime?
+  nextAction     String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  owner          User?           @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  tasks          Task[]
+  aiInsights     AIInsight[]
+  activityLogs   ActivityLog[]
+
+  @@unique([workspaceId, companyName])
+  @@index([workspaceId, status])
+  @@index([ownerId])
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  workspaceId  String
+  customerId   String?
+  assignedToId String?
+  title        String
+  status       BookingStatus @default(DRAFT)
+  startsAt     DateTime
+  endsAt       DateTime
+  location     String?
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  assignedTo   User?         @relation("BookingAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tasks        Task[]
+  aiInsights   AIInsight[]
+  activityLogs ActivityLog[]
+
+  @@index([workspaceId, status, startsAt])
+  @@index([customerId])
+  @@index([assignedToId])
+}
+
+model Task {
+  id           String       @id @default(cuid())
+  workspaceId  String
+  assignedToId String?
+  customerId   String?
+  leadId       String?
+  bookingId    String?
+  title        String
+  description  String?
+  status       TaskStatus   @default(TODO)
+  priority     TaskPriority @default(MEDIUM)
+  dueAt        DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  workspace    Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  customer     Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lead         Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  booking      Booking?     @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  activityLogs ActivityLog[]
+
+  @@index([workspaceId, status, priority])
+  @@index([customerId])
+  @@index([leadId])
+  @@index([bookingId])
+  @@index([assignedToId])
+}
+
+model ConversationThread {
+  id            String                @id @default(cuid())
+  workspaceId   String
+  customerId    String?
+  channel       ConversationChannel
+  subject       String?
+  sentiment     ConversationSentiment @default(NEUTRAL)
+  lastMessageAt DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  workspace     Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer      Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  messages      ConversationMessage[]
+  aiInsights    AIInsight[]
+  activityLogs  ActivityLog[]
+
+  @@index([workspaceId, channel, lastMessageAt])
+  @@index([customerId])
+}
+
+model ConversationMessage {
+  id        String                @id @default(cuid())
+  threadId  String
+  authorId  String?
+  direction ConversationDirection
+  body      String
+  createdAt DateTime              @default(now())
+  thread    ConversationThread    @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author    User?                 @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([threadId, createdAt])
+  @@index([authorId])
+}
+
+model AutomationFlow {
+  id          String           @id @default(cuid())
+  workspaceId String
+  name        String
+  description String?
+  triggerType String
+  actionType  String
+  status      AutomationStatus @default(DRAFT)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  aiInsights  AIInsight[]
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  customerId    String?
+  invoiceNumber String
+  amount        Decimal       @db.Decimal(12, 2)
+  status        InvoiceStatus @default(DRAFT)
+  dueDate       DateTime?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer      Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  aiInsights    AIInsight[]
+  activityLogs  ActivityLog[]
+
+  @@unique([workspaceId, invoiceNumber])
+  @@index([workspaceId, status])
+  @@index([customerId])
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  workspaceId String
+  customerId  String
+  createdById String?
+  quoteNumber String
+  title       String
+  description String?
+  amount      Decimal     @db.Decimal(12, 2)
+  status      QuoteStatus @default(DRAFT)
+  validUntil  DateTime?
+  sentAt      DateTime?
+  viewedAt    DateTime?
+  approvedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdBy   User?       @relation("QuoteCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, quoteNumber])
+  @@index([workspaceId, status, createdAt])
+  @@index([customerId])
+  @@index([createdById])
+}
+
+model AIInsight {
+  id             String              @id @default(cuid())
+  workspaceId    String
+  customerId     String?
+  leadId         String?
+  bookingId      String?
+  invoiceId      String?
+  conversationId String?
+  automationId   String?
+  createdById    String?
+  entityType     EntityType
+  type           AIInsightType
+  title          String
+  content        String
+  confidence     Int?
+  createdAt      DateTime            @default(now())
+  workspace      Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customer       Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lead           Lead?               @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  booking        Booking?            @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  invoice        Invoice?            @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  conversation   ConversationThread? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  automation     AutomationFlow?     @relation(fields: [automationId], references: [id], onDelete: SetNull)
+  createdBy      User?               @relation("InsightCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, type, createdAt])
+  @@index([customerId])
+  @@index([leadId])
+  @@index([bookingId])
+  @@index([invoiceId])
+  @@index([conversationId])
+  @@index([automationId])
+}
+
+model Notification {
+  id         String               @id @default(cuid())
+  workspaceId String
+  userId     String
+  type       NotificationType
+  priority   NotificationPriority @default(MEDIUM)
+  title      String
+  body       String
+  href       String?
+  entityType EntityType?
+  entityId   String?
+  readAt     DateTime?
+  createdAt  DateTime             @default(now())
+  workspace  Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId, createdAt])
+  @@index([userId, readAt, createdAt])
+  @@index([entityType, entityId])
+}
+
+model ActivityLog {
+  id             String         @id @default(cuid())
+  workspaceId     String
+  actorId        String?
+  type           ActivityType
+  title          String
+  detail         String
+  entityType     EntityType
+  entityId       String?
+  customerId     String?
+  leadId         String?
+  bookingId      String?
+  taskId         String?
+  invoiceId      String?
+  conversationId String?
+  createdAt      DateTime       @default(now())
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor          User?          @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  customer       Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lead           Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  booking        Booking?       @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  task           Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  invoice        Invoice?       @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  conversation   ConversationThread? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([customerId, createdAt])
+  @@index([leadId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([bookingId, createdAt])
+  @@index([invoiceId, createdAt])
+  @@index([conversationId, createdAt])
+}

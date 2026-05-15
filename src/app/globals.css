@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+:root {
+  --bg-base: #f7f7f5;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f3f4f6;
+  --bg-glass: rgba(255, 255, 255, 0.82);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --accent-blue: #10b981;
+  --accent-cyan: #059669;
+  --accent-violet: #84cc16;
+}
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.12), transparent 24%),
+    radial-gradient(circle at 80% 18%, rgba(132, 204, 22, 0.1), transparent 22%),
+    var(--bg-base);
+  color: var(--text-primary);
+  color-scheme: light;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+body::selection {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(16, 185, 129, 0.45),
+    rgba(132, 204, 22, 0.45)
+  );
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(16, 185, 129, 0.65),
+    rgba(132, 204, 22, 0.65)
+  );
+  background-clip: padding-box;
+}
+
+.text-white {
+  color: #0f172a !important;
+}
+
+.text-slate-300 {
+  color: #475569 !important;
+}
+
+.text-slate-400 {
+  color: #64748b !important;
+}
+
+.text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.text-slate-200 {
+  color: #334155 !important;
+}
+
+.text-cyan-300,
+.text-violet-300,
+.text-emerald-300 {
+  color: #059669 !important;
+}
+
+.bg-black\/20,
+.bg-black\/25 {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.bg-white\/5,
+.bg-white\/6,
+.bg-white\/8,
+.bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.88) !important;
+}
+
+[class*="bg-white/[0.03]"],
+[class*="bg-white/[0.04]"],
+[class*="bg-white/[0.045]"],
+[class*="bg-white/[0.05]"],
+[class*="bg-white/[0.06]"] {
+  background-color: rgba(255, 255, 255, 0.82) !important;
+}
+
+.border-white\/8,
+.border-white\/10 {
+  border-color: rgba(148, 163, 184, 0.22) !important;
+}
