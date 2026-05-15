@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { useEffect } from "react";
 import { Activity, BriefcaseBusiness, LoaderCircle, ShieldCheck, Users } from "lucide-react";
-import { WorkspaceRole } from "@prisma/client";
 import { useRouter } from "next/navigation";
 
 import { CrmShell } from "@/components/crm-shell";
@@ -12,6 +11,7 @@ import { ShellCard } from "@/components/shell-card";
 import { initialActionState } from "@/lib/actions/action-state";
 import { updateTeamMemberActiveAction, updateTeamMemberRoleAction } from "@/lib/actions/crm";
 import type { TeamData } from "@/lib/server/business-data";
+import { WORKSPACE_ROLES, type WorkspaceRoleValue } from "@/lib/workspace-role";
 
 function TeamMemberCard({
   member,
@@ -155,11 +155,11 @@ export function TeamPage({
   currentUserRole,
 }: {
   data?: TeamData;
-  currentUserRole: WorkspaceRole;
+  currentUserRole: WorkspaceRoleValue;
 }) {
   const router = useRouter();
   const canManage =
-    currentUserRole === WorkspaceRole.OWNER || currentUserRole === WorkspaceRole.ADMIN;
+    currentUserRole === WORKSPACE_ROLES.OWNER || currentUserRole === WORKSPACE_ROLES.ADMIN;
 
   useEffect(() => {
     const interval = window.setInterval(() => {
